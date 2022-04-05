@@ -43,7 +43,7 @@ func usage() {
 func printMsg(m *stan.Msg, i int) {
 	var order getOrdeResponse
 	json.Unmarshal(m.Data, &order)
-	logrus.Println(string(m.Data))
+	logrus.Println(order)
 }
 
 type getOrdeResponse struct {

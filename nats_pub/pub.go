@@ -103,7 +103,7 @@ func main() {
 	}
 	defer sc.Close()
 
-	subj, msg := args[0], []byte(args[1]+args[2]+args[3]+args[4]+args[5]+args[6])
+	subj, msg := args[0], []byte(args[1]+args[2]+args[3]+args[4]+args[5]+args[6]+args[7]+args[8])
 
 	ch := make(chan bool)
 	var glock sync.Mutex
