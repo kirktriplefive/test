@@ -8,7 +8,6 @@ import (
 	"github.com/kirktriplefive/test"
 	"github.com/kirktriplefive/test/pkg/cache"
 	"github.com/kirktriplefive/test/pkg/repository"
-	"github.com/sirupsen/logrus"
 )
 
 type OrderService struct {
@@ -60,7 +59,6 @@ func (s *OrderService) CreateNewOrder(order test.Order, items []test.Item) (stri
 			DateCreated:       order.DateCreated,
 			OofShard:          order.OofShard,
 		}
-		logrus.Println("Order cache")
 		s.cache.AddOrder(orderResponse)
 	} 
 	return " ", nil
@@ -86,23 +84,17 @@ func (s *OrderService) GetOrderById(c *gin.Context) {
 	order, err := s.cache.GetOrder(order_uid)
 	if err != nil {
 		c.HTML(
-			// Зададим HTTP статус 200 (OK)
 			http.StatusOK,
-			// Используем шаблон article.html
 			"order.html",
-			// Передадим данные в шаблон
 			gin.H{
 				"Order_uid" : "Не найден",
 			},
 		)
-		return
+		
 	} else {
 		c.HTML(
-			// Зададим HTTP статус 200 (OK)
 			http.StatusOK,
-			// Используем шаблон article.html
 			"order.html",
-			// Передадим данные в шаблон
 			gin.H{
 				"Order_uid" : order.Order_uid,
 				"TrackNumber" :   order.TrackNumber,

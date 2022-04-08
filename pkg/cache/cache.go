@@ -21,9 +21,7 @@ func NewCache() *Cache {
 }
 
 func (cache *Cache) AddOrder(order test.OrderResponseCache) {
-	cache.mutex.Lock()
 	cache.orders[order.Order_uid] = &order
-	cache.mutex.Unlock()
 }
 
 func (cache *Cache) AddToCache(order test.OrderResponseCache) {

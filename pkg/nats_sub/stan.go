@@ -132,7 +132,6 @@ func (c *Client) reconnectToStan(_ stan.Conn, _ error) {
 func (c *Client) Mcb(msg *stan.Msg) {
 	var newOrder test.Order
 	var items []test.Item
-	logrus.Printf("deeesxedex")
 	c.M.Lock()
 	defer c.M.Unlock()
 	var order getOrdeResponse
@@ -151,7 +150,6 @@ func (c *Client) Mcb(msg *stan.Msg) {
 		newOrder.SmId = order.SmId
 		newOrder.DateCreated = order.DateCreated
 		newOrder.OofShard = order.OofShard
-		logrus.Printf("Order")
 		if id,err:=c.Service.CreateNewOrder(newOrder, items); err != nil {
 			logrus.Error(err, ": err save order")
 			err = msg.Ack()
@@ -160,9 +158,9 @@ func (c *Client) Mcb(msg *stan.Msg) {
 			}
 			return
 		} else {
-			logrus.Println("id: %s",id)
+			logrus.Printf("id: %s", id)
 		}
-	} else {logrus.Println("inshaala: %s",err)}
+	} else {logrus.Printf("inshaala: %s",err.Error())}
 	if err := msg.Ack(); err != nil {
 		logrus.Error(err)
 		return
