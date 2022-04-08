@@ -8,7 +8,7 @@ import (
 	"github.com/kirktriplefive/test"
 	"github.com/kirktriplefive/test/pkg/cache"
 	"github.com/kirktriplefive/test/pkg/repository"
-
+	"github.com/sirupsen/logrus"
 )
 
 type OrderService struct {
@@ -60,6 +60,7 @@ func (s *OrderService) CreateNewOrder(order test.Order, items []test.Item) (stri
 			DateCreated:       order.DateCreated,
 			OofShard:          order.OofShard,
 		}
+		logrus.Println("Order cache")
 		s.cache.AddOrder(orderResponse)
 	} 
 	return " ", nil

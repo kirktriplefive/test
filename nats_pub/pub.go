@@ -54,7 +54,7 @@ func main() {
 	flag.Parse()
 
 	order:= getOrdeResponse{
-		Order_uid:         "b564b9test",
+		Order_uid:         "b4b9564ааtfew3t",
 		TrackNumber:       "WBILMTESTTRACK",
 		Entry:             "WBIL",
 		Del:               test.Delivery{

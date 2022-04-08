@@ -61,9 +61,7 @@ func main() {
 		logrus.Fatal(err, "Failed to recover cache")
 	}
 
-	//handlers := handler.NewHandler(services)
 
-    //Creating Subscriber to STAN
     nc := nats_sub.NewSubscriber(nats_sub.Client{
         M:         &sync.Mutex{},
 		Host:      stan.DefaultNatsURL,
@@ -98,12 +96,6 @@ func main() {
 
 	}
 	http.Handle("/", rout)
-
-		//rout.GET("/api/order/{id}", cors(services.GetOrderById))
-		//rout.ServeFiles("/{filepath:*}", "web-interface")
-
-		//listenErr <- fasthttp.ListenAndServe(":8080", rout.Handler)
-		//logrus.Info(rout.List())
 	listenErr <- rout.Run()
 	}()
 
