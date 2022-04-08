@@ -6,13 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/kirktriplefive/test"
 	nats "github.com/nats-io/nats.go"
 	stan "github.com/nats-io/stan.go"
 )
-
-
 
 // NOTE: Use tls scheme for TLS, e.g. stan-pub -s tls://demo.nats.io:4443 foo hello
 
@@ -34,29 +34,23 @@ type getOrdeResponse struct {
 	OofShard string `json:"oof_shard"`
 }
 
-func main() {
-	var (
-		clusterID string
-		clientID  string
-		URL       string
-		userCreds string
-		
-	)
+func randomInt(min, max int) int {
+	return min + rand.Intn(max-min)
+	}
 
-	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&URL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
-	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
-	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
-	flag.StringVar(&clientID, "id", "stan-pub", "The NATS Streaming client ID to connect with")
-	flag.StringVar(&clientID, "clientid", "stan-pub", "The NATS Streaming client ID to connect with")
+func randomString(len int) string {
+	bytes := make([]byte, len)
+	for i := 0; i < len; i++ {
+	bytes[i] = byte(randomInt(65, 90))
+	}
+	return string(bytes)
+	}
 
-	log.SetFlags(0)
-	flag.Parse()
-
+func RandomOrder() getOrdeResponse {
 	order:= getOrdeResponse{
-		Order_uid:         "efe5verv3f8t",
-		TrackNumber:       "WBILMTESTTRACK",
-		Entry:             "WBIL",
+		Order_uid:         randomString(5),
+		TrackNumber:       randomString(7),
+		Entry:             randomString(8),
 		Del:               test.Delivery{
 			Delivery_Id: 1,
 			Name:        "Test Testov",
@@ -85,7 +79,7 @@ func main() {
 				ChrtId: 9934930,
 				TrackNumber: "WBILMTESTTRACK",
 				Price: 453,
-				Rid: "ab4219ма40ctest",
+				Rid: "ab4219маrc40ctest",
 				Name:  "Mascaras",      
 				Sale: 30,      
 				Size: "0",       
@@ -133,12 +127,30 @@ func main() {
 		DateCreated:       "tem",
 		OofShard:          "1",
 	}
+	return order
+}
 
-	b, err := json.Marshal(order)
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
+func main() {
+	var (
+		clusterID string
+		clientID  string
+		URL       string
+		userCreds string
+		
+	)
+
+	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&URL, "server", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
+	flag.StringVar(&clusterID, "c", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
+	flag.StringVar(&clientID, "id", "stan-pub", "The NATS Streaming client ID to connect with")
+	flag.StringVar(&clientID, "clientid", "stan-pub", "The NATS Streaming client ID to connect with")
+
+	log.SetFlags(0)
+	flag.Parse()
+
+
+	
 
 	// Connect Options.
 	opts := []nats.Option{nats.Name("NATS Streaming Example Publisher")}
@@ -164,15 +176,25 @@ func main() {
 		log.Fatalf("Can't connect: %v.\nMake sure a NATS Streaming Server is running at: %s", err, URL)
 	}
 	defer sc.Close()
-
+	
 	subj:= "foo"
+	for i:=1; i<20; i++ {
+		b, err := json.Marshal(RandomOrder())
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		msg:=[]byte(string(b))
+		//msg = []byte(subj)
 
-	msg:=[]byte(string(b))
-	err = sc.Publish(subj, msg)
-	if err != nil {
-		log.Fatalf("Error during publish: %v\n", err)
+		err = sc.Publish(subj, msg)
+		if err != nil {
+			log.Fatalf("Error during publish: %v\n", err)
+		}
+		
+		//json.Unmarshal(msg, &order)
+		//log.Println(order)
+		log.Printf("Published [%s] : '%s'\n", subj, msg)
+		time.Sleep(time.Second*5)
 	}
-	//json.Unmarshal(msg, &order)
-	//log.Println(order)
-	log.Printf("Published [%s] : '%s'\n", subj, msg)
 }
