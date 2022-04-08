@@ -21,7 +21,8 @@ CREATE TABLE delivery
 CREATE TABLE payment
 (
     id serial primary key,
-    request_id varchar(255) unique,
+    transaction varchar(255) not null,
+    request_id varchar(255),
     currency varchar(255) not null,
     provider varchar(255) not null,
     amount int not null,
@@ -49,7 +50,7 @@ CREATE TABLE item
 
 CREATE TABLE orders
 (
-    order_uid serial primary key,
+    order_uid varchar(255) primary key,
     track_number varchar(255) not null,
     entry varchar(255) not null,
     locale varchar(255) not null,
@@ -58,7 +59,7 @@ CREATE TABLE orders
     delivery_service varchar(255) not null,
     shardkey varchar(255) not null,
     sm_id int not null,
-    date_created timestamp not null,
+    date_created varchar(255) not null,
     oof_shard varchar(255) not null,
     payment_id int references payment(id) on delete cascade not null,
     delivery_id int references delivery(d_id) on delete cascade not null
@@ -67,6 +68,6 @@ CREATE TABLE orders
 CREATE TABLE itemsinorder
 (
     id serial primary key,
-    order_id int references orders(order_uid) on delete cascade not null,
+    order_id varchar(255) references orders(order_uid) on delete cascade not null,
     item_id varchar(255) references item(rid) on delete cascade not null
 );

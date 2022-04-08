@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+
+  <head>
+    <!--Use the `title` variable to set the title of the page-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    
+    <!--Use bootstrap to make the application look decent-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <script async src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+  </head>
+
+  <form name="idform">
+    <input type="text" name="id">
+    <input type="button" value="Искать товар" onclick="location.href='http://localhost:8080/api/order/'+escape(document.forms['idform'].elements['id'].value)">
+</form>
+<div>order_uid: {{.Order_uid}}</div>
+<div>track_number: {{.TrackNumber}}</div>
+<div>entry: {{.Entry}}</div>
+<div><strong>delivery:</strong> { name: {{.Delivery.Name}}</div>
+<div>phone: {{.Delivery.Phone}}</div>
+<div>zip: {{.Delivery.Zip}}</div>
+<div>city: {{.Delivery.City}}</div>
+<div>address: {{.Delivery.Address}}</div>
+<div>region: {{.Delivery.Region}}</div>
+<div>email: {{.Delivery.Email}} }</div>
+<div><strong>payment:</strong>{ transaction: {{.Payment.Transaction}}</div>
+<div>request_id: {{.Payment.RequestId}}</div>
+<div>currency: {{.Payment.Currency}}</div>
+<div>provider: {{.Payment.Provider}}</div>
+<div>amount: {{.Payment.Amount}}</div>
+<div>payment_dt: {{.Payment.PaymentDt}}</div>
+<div>bank: {{.Payment.Bank}}</div>
+<div>delivery_cost: {{.Payment.DeliveryCost}}</div>
+<div>goods_total: {{.Payment.GoodsTotal}}</div>
+<div>custom_fee: {{.Payment.CustomFee}}</div>
+<div><strong>items:</strong> [</div>
+{{range .payload }}
+    <!--Create the link for the article based on its ID-->
+    <div>{</div>
+    <div>chrt_id: {{.ChrtId}}</div>
+    <!--Display the content of the article-->
+    <div>track_number: {{.TrackNumber}}</div>
+    <div>price: {{.Price}}</div>
+    <div>rid: {{.Rid}}</div>
+    <div>name: {{.Name}}</div>
+    <div>sale: {{.Sale}}</div>
+    <div>size: {{.Size}}</div>
+    <div>total_price: {{.TotalPrice}}</div>
+    <div>nm_id: {{.NmId}}</div>
+    <div>brand: {{.Brand}}</div>
+    <div>status: {{.Status}}</div>
+    <div>}</div>
+    
+  {{end}}
+<div>]</div>
+<div>locale: {{.Locale}}</div>
+<div>internal_signature: {{.InternalSignature}}</div>
+<div>customer_id: {{.CustomerId}}</div>
+<div>delivery_service: {{.DeliveryService}}</div>
+<div>shard_key: {{.ShardKey}}</div>
+<div>sm_id: {{.SmId}}</div>
+<div>date_created: {{.DateCreated}}</div>
+<div>oof_shard: {{.OofShard}}</div>
+  </body>
+

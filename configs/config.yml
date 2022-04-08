@@ -1,8 +1,12 @@
-port: "8080"
-
 db:
     username: "postgres"
     host: "localhost"
     port: "5432"
     dbname: "postgres"
     sslmode: "disable"
+
+client:
+    ClusterID: "test-cluster"
+    ClientID: "stan-sub"
+    Subject: "foo"
+    

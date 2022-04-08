@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/kirktriplefive/test"
@@ -135,4 +136,122 @@ func (r *OrderPostgres) GetById(orderId int) (test.Order, []test.Item, error){
 	}
 
 	return order, items, nil
+}
+
+func (r *OrderPostgres) CreateNewOrder(order test.Order, items []test.Item) (string, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return "", err
+	}
+
+
+	del:=order.Delivery
+	var deliveryId int
+	createDeliveryQuery := fmt.Sprintf("INSERT INTO %s (name, phone, zip, city, address, region, email) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING RETURNING d_id ", deliveryTable)
+	row := tx.QueryRow(createDeliveryQuery, del.Name, del.Phone, del.Zip, del.City, del.Address, del.Region, del.Email )
+	if err :=row.Scan(&deliveryId); err!=nil {
+		tx.Rollback()
+		return " ", err
+	}
+	var paymentId int
+	payment:=order.Payment
+	createPaymentQuery := fmt.Sprintf("INSERT INTO %s (transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost,goods_total, custom_fee) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT DO NOTHING RETURNING id ", paymentTable)
+	rowp := tx.QueryRow(createPaymentQuery, payment.Transaction,payment.RequestId, payment.Currency, payment.Provider, payment.Amount, payment.PaymentDt, payment.Bank, payment.DeliveryCost, payment.GoodsTotal, payment.CustomFee)
+	if err :=rowp.Scan(&paymentId); err!=nil {
+		tx.Rollback()
+		return " ", err
+	}
+	
+	var order_id string
+	createOrdersQuery := fmt.Sprintf("INSERT INTO %s (order_uid, track_number, entry, locale, internal_signature, customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard, payment_id, delivery_id ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)  ON CONFLICT  DO NOTHING RETURNING order_uid", ordersTable)
+	rowOrder:= tx.QueryRow(createOrdersQuery, order.Order_uid ,order.TrackNumber, order.Entry, order.Locale, order.InternalSignature, order.CustomerId, order.DeliveryService, order.ShardKey, order.SmId, order.DateCreated, order.OofShard, paymentId, deliveryId)
+	if err:=rowOrder.Scan(&order_id); err!=nil {
+		tx.Rollback()
+		return " ", err
+	}
+
+	var id int
+	for _, value := range items {
+		createItemQuery := fmt.Sprintf("INSERT INTO %s (chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT  DO NOTHING RETURNING rid ", ItemsTable)
+		_, err:=tx.Exec(createItemQuery, value.ChrtId, value.TrackNumber, value.Price, value.Rid, value.Name, value.Sale, value.Size, value.TotalPrice, value.NmId, value.Brand, value.Status)
+		if err != nil {
+			tx.Rollback()
+			log.Printf(err.Error())
+			return " ", err
+		}
+		
+		createListItemsQuery := fmt.Sprintf("INSERT INTO %s (order_id, item_id) values ($1, $2) RETURNING id", itemsInOrderTable)
+		row = tx.QueryRow(createListItemsQuery, order_id, value.Rid)
+		if err :=row.Scan(&id); err!=nil {
+			tx.Rollback()
+			return " ", err
+		}
+
+
+	}
+	 return order_id, tx.Commit()
+}
+
+func (r *OrderPostgres) Close() error {
+	err := r.db.Close()
+	return err
+}
+
+func (r *OrderPostgres) GetOrdersForCache() ([]test.OrderResponseCache, error) {
+	var allOrders []test.OrderResponseCache
+
+	query := fmt.Sprintf("SELECT o.order_uid, o.track_number, o.entry, delivery.name, delivery.phone, delivery.zip, delivery.city, delivery.address, delivery.region, delivery.email, payment.transaction, payment.request_id, payment.currency, payment.provider, payment.amount, payment.payment_dt, payment.bank, payment.delivery_cost, payment.goods_total, payment.custom_fee, o.locale, o.internal_signature, o.customer_id, o.delivery_service, o.shardkey, o.sm_id, o.date_created, o.oof_shard from %s o LEFT JOIN %s delivery ON o.delivery_id=delivery.d_id LEFT JOIN %s payment ON o.payment_id=payment.id",
+						ordersTable, deliveryTable, paymentTable)
+	rows, err := r.db.Query(query) 
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+        var ord test.OrderResponseCache
+		var allItems []test.Item
+        if err := rows.Scan(&ord.Order_uid, &ord.TrackNumber, &ord.Entry, 
+							&ord.Del.Name, &ord.Del.Phone, &ord.Del.Zip, 
+							&ord.Del.City, &ord.Del.Address, &ord.Del.Region, 
+							&ord.Del.Email, &ord.Paym.Transaction, &ord.Paym.RequestId, 
+							&ord.Paym.Currency, &ord.Paym.Provider, &ord.Paym.Amount,
+							&ord.Paym.PaymentDt, &ord.Paym.Bank, &ord.Paym.DeliveryCost,
+							&ord.Paym.GoodsTotal, &ord.Paym.CustomFee,
+							&ord.Locale, &ord.InternalSignature, &ord.CustomerId, 
+							&ord.DeliveryService, &ord.ShardKey, &ord.SmId,
+							&ord.DateCreated, &ord.OofShard); err != nil {
+            return nil, err
+        }
+		id:=ord.Order_uid
+		queryItem:=fmt.Sprintf("SELECT item.chrt_id, item.track_number, item.price, item.rid, item.name, item.sale, item.size, item.total_price, item.nm_id, item.brand, item.status FROM %s item LEFT JOIN %s itor ON item.rid=itor.item_id WHERE itor.order_id=$1",
+								ItemsTable, itemsInOrderTable)
+		itemRows, err := r.db.Query(queryItem, id)
+		if err!=nil {
+			return nil, err
+		}
+
+		defer itemRows.Close()
+		for itemRows.Next(){
+			var item test.Item
+			if err:=itemRows.Scan(&item.ChrtId, &item.TrackNumber, &item.Price, 
+								&item.Rid, &item.Name, &item.Sale, &item.Size, 
+								&item.TotalPrice, &item.NmId, &item.Brand, &item.Status); err != nil {
+				return nil, err
+								
+		}
+		allItems = append(allItems,item)
+	}
+		ord.Items = allItems
+        allOrders = append(allOrders, ord)
+		allItems = append(allItems[:0], allItems[len(allItems):]...)
+
+    }
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+
+
+	return allOrders, nil
 }

@@ -1,37 +1,24 @@
 package main
 
 import (
+	//"encoding/json"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"os"
-	"sync"
-	"time"
 
 	"github.com/kirktriplefive/test"
 	nats "github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
+	stan "github.com/nats-io/stan.go"
 )
 
-var usageStr = `
-Usage: stan-pub [options] <subject> <message>
-Options:
-	-s,  --server   <url>            NATS Streaming server URL(s)
-	-c,  --cluster  <cluster name>   NATS Streaming cluster name
-	-id, --clientid <client ID>      NATS Streaming client ID
-	-a,  --async                     Asynchronous publish mode
-	-cr, --creds    <credentials>    NATS 2.0 Credentials
-`
+
 
 // NOTE: Use tls scheme for TLS, e.g. stan-pub -s tls://demo.nats.io:4443 foo hello
-func usage() {
-	fmt.Printf("%s\n", usageStr)
-	os.Exit(0)
-}
+
 
 type getOrdeResponse struct {
-	Order_uid int `json:"order_uid"`
+	Order_uid string `json:"order_uid"`
 	TrackNumber string `json:"track_number"`
 	Entry string `json:"entry" db:"entry"`
 	Del test.Delivery `json:"delivery"`
@@ -52,9 +39,8 @@ func main() {
 		clusterID string
 		clientID  string
 		URL       string
-		async     bool
 		userCreds string
-		order getOrdeResponse
+		
 	)
 
 	flag.StringVar(&URL, "s", stan.DefaultNatsURL, "The nats server URLs (separated by comma)")
@@ -63,20 +49,96 @@ func main() {
 	flag.StringVar(&clusterID, "cluster", "test-cluster", "The NATS Streaming cluster ID")
 	flag.StringVar(&clientID, "id", "stan-pub", "The NATS Streaming client ID to connect with")
 	flag.StringVar(&clientID, "clientid", "stan-pub", "The NATS Streaming client ID to connect with")
-	flag.BoolVar(&async, "a", false, "Publish asynchronously")
-	flag.BoolVar(&async, "async", false, "Publish asynchronously")
-	flag.StringVar(&userCreds, "cr", "", "Credentials File")
-	flag.StringVar(&userCreds, "creds", "", "Credentials File")
 
 	log.SetFlags(0)
-	flag.Usage = usage
 	flag.Parse()
 
-	args := flag.Args()
+	order:= getOrdeResponse{
+		Order_uid:         "b564b9test",
+		TrackNumber:       "WBILMTESTTRACK",
+		Entry:             "WBIL",
+		Del:               test.Delivery{
+			Delivery_Id: 1,
+			Name:        "Test Testov",
+			Phone:       "+9720000000",
+			Zip:         "2639809",
+			City:        "Kiryat Mozkin",
+			Address:     "Ploshad Mira 15",
+			Region:      "Kraiot",
+			Email:       "test@gmail.com",
+		},
+		Paym:              test.Payment{
+			Id:           1,
+			Transaction: "b563febауц7b2b84b6test",
+			RequestId:    "",
+			Currency:     "USD",
+			Provider:     "wbpay",
+			Amount:       1817,
+			PaymentDt:    1637907727,
+			Bank:         "alpha",
+			DeliveryCost: 1500,
+			GoodsTotal:   317,
+			CustomFee:    0,
+		},
+		Items: []test.Item{
+			{
+				ChrtId: 9934930,
+				TrackNumber: "WBILMTESTTRACK",
+				Price: 453,
+				Rid: "ab4219ма40ctest",
+				Name:  "Mascaras",      
+				Sale: 30,      
+				Size: "0",       
+				TotalPrice:  317, 
+				NmId:   2389212,     
+				Brand: "Vivienne Sabo",      
+				Status: 202,
+			},
+			{
+				ChrtId: 9934930,
+				TrackNumber: "WBILMTESTTRACK",
+				Price: 453,
+				Rid: "ab4214ae0btest",
+				Name:  "Mascaras",      
+				Sale: 30,      
+				Size: "0",       
+				TotalPrice:  317, 
+				NmId:   2389212,     
+				Brand: "Vivienne Sabo",      
+				Status: 202,
 
-	if len(args) < 1 {
-		usage()
+			},
+			{
+				ChrtId: 9934930,
+				TrackNumber: "WBIeMTESTTRACK",
+				Price: 453,
+				Rid: "ab4214aew2test",
+				Name:  "Mascaras",      
+				Sale: 30,      
+				Size: "0",       
+				TotalPrice:  317, 
+				NmId:   2389212,     
+				Brand: "Vivienne Sabo",      
+				Status: 202,
+
+			},
+
+		},
+		Locale:            "en",
+		InternalSignature: "",
+		CustomerId:        "test",
+		DeliveryService:   "meest",
+		ShardKey:          "9",
+		SmId:              99,
+		DateCreated:       "tem",
+		OofShard:          "1",
 	}
+
+	b, err := json.Marshal(order)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
 
 	// Connect Options.
 	opts := []nats.Option{nats.Name("NATS Streaming Example Publisher")}
@@ -103,50 +165,14 @@ func main() {
 	}
 	defer sc.Close()
 
-	subj, msg := args[0], []byte(args[1]+args[2]+args[3]+args[4]+args[5]+args[6]+args[7]+args[8])
+	subj:= "foo"
 
-	ch := make(chan bool)
-	var glock sync.Mutex
-	var guid string
-	acb := func(lguid string, err error) {
-		glock.Lock()
-		log.Printf("Received ACK for guid %s\n", lguid)
-		defer glock.Unlock()
-		if err != nil {
-			log.Fatalf("Error in server ack for guid %s: %v\n", lguid, err)
-		}
-		if lguid != guid {
-			log.Fatalf("Expected a matching guid in ack callback, got %s vs %s\n", lguid, guid)
-		}
-		ch <- true
+	msg:=[]byte(string(b))
+	err = sc.Publish(subj, msg)
+	if err != nil {
+		log.Fatalf("Error during publish: %v\n", err)
 	}
-
-	if !async {
-		err = sc.Publish(subj, msg)
-		if err != nil {
-			log.Fatalf("Error during publish: %v\n", err)
-		}
-		json.Unmarshal(msg, &order)
-		log.Println(order)
-		log.Printf("Published [%s] : '%s'\n", subj, msg)
-	} else {
-		glock.Lock()
-		guid, err = sc.PublishAsync(subj, msg, acb)
-		if err != nil {
-			log.Fatalf("Error during async publish: %v\n", err)
-		}
-		glock.Unlock()
-		if guid == "" {
-			log.Fatal("Expected non-empty guid to be returned.")
-		}
-		log.Printf("Published [%s] : '%s' [guid: %s]\n", subj, msg, guid)
-
-		select {
-		case <-ch:
-			break
-		case <-time.After(5 * time.Second):
-			log.Fatal("timeout")
-		}
-
-	}
+	//json.Unmarshal(msg, &order)
+	//log.Println(order)
+	log.Printf("Published [%s] : '%s'\n", subj, msg)
 }
