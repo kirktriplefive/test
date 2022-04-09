@@ -160,7 +160,7 @@ func (c *Client) Mcb(msg *stan.Msg) {
 		} else {
 			logrus.Printf("id: %s", id)
 		}
-	} else {logrus.Printf("inshaala: %s",err.Error())}
+	} else {logrus.Printf("can't save order: %s",err.Error())}
 	if err := msg.Ack(); err != nil {
 		logrus.Error(err)
 		return

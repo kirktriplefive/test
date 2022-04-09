@@ -53,39 +53,39 @@ func RandomOrder() getOrdeResponse {
 		Entry:             randomString(8),
 		Del:               test.Delivery{
 			Delivery_Id: 1,
-			Name:        "Test Testov",
-			Phone:       "+9720000000",
-			Zip:         "2639809",
-			City:        "Kiryat Mozkin",
-			Address:     "Ploshad Mira 15",
-			Region:      "Kraiot",
-			Email:       "test@gmail.com",
+			Name:        randomString(5),
+			Phone:       randomString(5),
+			Zip:         randomString(5),
+			City:        randomString(5),
+			Address:     randomString(5),
+			Region:      randomString(5),
+			Email:       randomString(10),
 		},
 		Paym:              test.Payment{
 			Id:           1,
-			Transaction: "b563febауц7b2b84b6test",
+			Transaction: randomString(8),
 			RequestId:    "",
-			Currency:     "USD",
+			Currency:     randomString(3),
 			Provider:     "wbpay",
-			Amount:       1817,
-			PaymentDt:    1637907727,
+			Amount:       randomInt(1,10000),
+			PaymentDt:    randomInt(1,100000),
 			Bank:         "alpha",
-			DeliveryCost: 1500,
-			GoodsTotal:   317,
-			CustomFee:    0,
+			DeliveryCost: randomInt(1,10000),
+			GoodsTotal:   randomInt(1,10000),
+			CustomFee:    randomInt(1,90),
 		},
 		Items: []test.Item{
 			{
-				ChrtId: 9934930,
-				TrackNumber: "WBILMTESTTRACK",
+				ChrtId: randomInt(1,10000),
+				TrackNumber: randomString(9),
 				Price: 453,
-				Rid: "ab4219маrc40ctest",
-				Name:  "Mascaras",      
-				Sale: 30,      
+				Rid: randomString(3),
+				Name:  randomString(10),      
+				Sale: randomInt(1,90),      
 				Size: "0",       
-				TotalPrice:  317, 
-				NmId:   2389212,     
-				Brand: "Vivienne Sabo",      
+				TotalPrice:  randomInt(1,10000), 
+				NmId:   randomInt(1,10000),     
+				Brand: randomString(10),      
 				Status: 202,
 			},
 			{
@@ -106,7 +106,7 @@ func RandomOrder() getOrdeResponse {
 				ChrtId: 9934930,
 				TrackNumber: "WBIeMTESTTRACK",
 				Price: 453,
-				Rid: "ab4214aew2test",
+				Rid: randomString(10),
 				Name:  "Mascaras",      
 				Sale: 30,      
 				Size: "0",       
@@ -179,22 +179,33 @@ func main() {
 	
 	subj:= "foo"
 	for i:=1; i<20; i++ {
-		b, err := json.Marshal(RandomOrder())
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		msg:=[]byte(string(b))
-		//msg = []byte(subj)
-
-		err = sc.Publish(subj, msg)
+		if i%3!=0 {
+			b, err := json.Marshal(RandomOrder())
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			msg:=[]byte(string(b))
+			err = sc.Publish(subj, msg)
 		if err != nil {
 			log.Fatalf("Error during publish: %v\n", err)
 		}
-		
-		//json.Unmarshal(msg, &order)
-		//log.Println(order)
+
 		log.Printf("Published [%s] : '%s'\n", subj, msg)
 		time.Sleep(time.Second*5)
+		} else {
+			msg:=[]byte(randomString(10))
+			err = sc.Publish(subj, msg)
+		if err != nil {
+			log.Fatalf("Error during publish: %v\n", err)
+		}
+
+		log.Printf("Published [%s] : '%s'\n", subj, msg)
+		time.Sleep(time.Second*5)
+		}
+		
+
+
+		
 	}
 }
