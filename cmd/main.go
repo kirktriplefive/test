@@ -17,7 +17,6 @@ import (
 	"github.com/nats-io/stan.go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/valyala/fasthttp"
 )
 
 func initConfig() error {
@@ -113,15 +112,3 @@ func main() {
 
 }
 
-func cors(next fasthttp.RequestHandler) fasthttp.RequestHandler {
-	return func(ctx *fasthttp.RequestCtx) {
-		ctx.Response.Header.Set("Access-Control-Allow-Headers", "Content-Type,Accept")
-		ctx.Response.Header.Set("Access-Control-Allow-Methods", "OPTIONS,POST,GET")
-		ctx.Response.Header.Set("Access-Control-Allow-Origin", "*")
-		if string(ctx.Method()) == http.MethodOptions {
-			ctx.Response.SetStatusCode(200)
-			return
-		}
-		next(ctx)
-	}
-}
